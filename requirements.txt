@@ -1,0 +1,7 @@
+tensorflow-gpu==1.15.0
+sentencepiece==0.1.85
+pickle
+tqdm==4.41.0
+networkx==2.4
+loguru==0.4.1
+
