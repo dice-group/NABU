@@ -8,23 +8,18 @@ parser = argparse.ArgumentParser(description="Main Arguments")
 # model paramteres
 parser.add_argument(
   '--enc_type', default='rnn', type=str, required=True,
-  help='Type of encoder Transformer | gat | rnn')
+  help='Type of encoder Transformer | gat')
 parser.add_argument(
   '--dec_type', default='rnn', type=str, required=True,
-  help='Type of decoder Transformer | rnn')
+  help='Type of decoder Transformer')
 parser.add_argument(
   '--model', default='monolingual', type=str, required=True,
-  help='Model type GAT | Transformer | RNN ')
+  help='Model type GAT | Transformer ')
 parser.add_argument(
   '--opt', type=str, required=False, help='The mode in which GAT model is operated -> \
                                              Use Roles method or Reification (roles, reif)')
 parser.add_argument(
-  '--train', type=bool, required=False, help='In training mode or eval mode')
-parser.add_argument(
-  '--distillation', type=str, required=False, help='To use Knowledge Distilaltion in the'
-                                                   'multilingual model')
-parser.add_argument(
-  '--temp', type=float, required=False, help='Temperature of the logits in Knowledge Distillation ')
+  '--mode', type=str, default='train', required=True, help='In training mode or test mode')
 
 # Colab options
 parser.add_argument(
@@ -98,10 +93,6 @@ parser.add_argument(
 parser.add_argument(
   '--num_examples', default=None, type=int, required=False,
   help='Number of examples to be processed')
-parser.add_argument(
-  '--tensorboard', type=bool, required=False, help='Use tensorboard or not')
-parser.add_argument(
-  '--colab', type=bool, required=False, help='Use Google-Colab')
 
 # hyper-parameters
 parser.add_argument(

@@ -18,6 +18,7 @@ from src.utils.Optimizers import LazyAdam
 from src.utils.metrics import LossLayer
 from src.utils.model_utils import CustomSchedule, _set_up_dirs
 from src.utils.rogue import rouge_n
+from src.utils.model_utils import process_results
 
 
 def _train_transformer(args):
@@ -158,49 +159,60 @@ def _train_transformer(args):
     score = 0
     eval_results.close()
     model.trainable = True
+    process_results(TestResults)
 
     return rogue, score
 
-  train_loss.reset_states()
-  train_accuracy.reset_states()
+  if args.mode == 'train':
+    train_loss.reset_states()
+    train_accuracy.reset_states()
 
-  for (batch, (inp, tgt)) in tqdm(enumerate(dataset.repeat(-1))):
-    if PARAMS['step'] < steps:
-      start = time.time()
-      PARAMS['step'] += 1
+    for (batch, (inp, tgt)) in tqdm(enumerate(dataset.repeat(-1))):
+      if PARAMS['step'] < steps:
+        start = time.time()
+        PARAMS['step'] += 1
 
-      if args.decay is not None:
-        optimizer._lr = learning_rate(tf.cast(PARAMS['step'], dtype=tf.float32))
+        if args.decay is not None:
+          optimizer._lr = learning_rate(tf.cast(PARAMS['step'], dtype=tf.float32))
 
-      batch_loss, acc, ppl = train_step(inp, tgt)
-      if batch % 100 == 0:
-        print('Step {} Learning Rate {:.4f} Train Loss {:.4f} '
-              'Accuracy {:.4f} Perplex {:.4f}'.format(PARAMS['step'],
-                                                      optimizer._lr,
-                                                      train_loss.result(),
-                                                      acc.numpy(),
-                                                      ppl.numpy()))
-        print('Time {} \n'.format(time.time() - start))
-      # log the training results
-      tf.io.write_file(log_file,
-                       f"Step {PARAMS['step']} Train Accuracy: {acc.numpy()}"
-                       f" Loss: {train_loss.result()} Perplexity: {ppl.numpy()} \n")
+        batch_loss, acc, ppl = train_step(inp, tgt)
+        if batch % 100 == 0:
+          print('Step {} Learning Rate {:.4f} Train Loss {:.4f} '
+                'Accuracy {:.4f} Perplex {:.4f}'.format(PARAMS['step'],
+                                                        optimizer._lr,
+                                                        train_loss.result(),
+                                                        acc.numpy(),
+                                                        ppl.numpy()))
+          print('Time {} \n'.format(time.time() - start))
+        # log the training results
+        tf.io.write_file(log_file,
+                         f"Step {PARAMS['step']} Train Accuracy: {acc.numpy()}"
+                         f" Loss: {train_loss.result()} Perplexity: {ppl.numpy()} \n")
 
-      if batch % args.eval_steps == 0:
-        rogue, score = eval_step(5)
-        print('\n' + '---------------------------------------------------------------------' + '\n')
-        print('Rogue {:.4f} BLEU {:.4f}'.format(rogue, score))
-        print('\n' + '---------------------------------------------------------------------' + '\n')
+        if batch % args.eval_steps == 0:
+          rogue, score = eval_step(5)
+          print('\n' + '---------------------------------------------------------------------' + '\n')
+          print('Rogue {:.4f}'.format(rogue))
+          print('\n' + '---------------------------------------------------------------------' + '\n')
 
-      if batch % args.checkpoint == 0:
-        print("Saving checkpoint \n")
-        ckpt_save_path = ckpt_manager.save()
-        with open(log_dir + '/' + args.lang + '_' + args.model + '_params', 'wb+') as fp:
-          pickle.dump(PARAMS, fp)
+        if batch % args.checkpoint == 0:
+          print("Saving checkpoint \n")
+          ckpt_save_path = ckpt_manager.save()
+          with open(log_dir + '/' + args.lang + '_' + args.model + '_params', 'wb+') as fp:
+            pickle.dump(PARAMS, fp)
 
-    else:
-      break
-  rogue, score = test_step()
-  print('\n' + '---------------------------------------------------------------------' + '\n')
-  print('Rogue {:.4f} BLEU {:.4f}'.format(rogue, score))
-  print('\n' + '---------------------------------------------------------------------' + '\n')
+      else:
+        break
+    rogue, score = test_step()
+    print('\n' + '---------------------------------------------------------------------' + '\n')
+    print('Rogue {:.4f}'.format(rogue))
+    print('\n' + '---------------------------------------------------------------------' + '\n')
+
+  elif args.mode == 'test':
+    rogue, score = test_step()
+    print('\n' + '---------------------------------------------------------------------' + '\n')
+    print('Rogue {:.4f}'.format(rogue))
+    print('\n' + '---------------------------------------------------------------------' + '\n')
+
+  else:
+    raise ValueError("Mode must be either 'train' or 'test'")

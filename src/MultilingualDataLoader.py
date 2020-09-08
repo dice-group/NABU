@@ -7,8 +7,8 @@ import sentencepiece as spm
 import tensorflow as tf
 
 from src.utils.PreprocessingUtils import PreProcess
-from src.utils.model_utils import PreprocessSeqSource
 from src.utils.model_utils import PreProcessSentence, _tensorize, Padding as padding
+from src.utils.model_utils import PreprocessSeqSource
 
 languages = ['eng', 'ger', 'rus']
 
@@ -32,7 +32,7 @@ def LoadMultlingualDataset(args):
   CUR_DIR = os.getcwd()
   levels_up = 0
   if args.use_colab is not None:
-    DATA_PATH = '/data/processed_data/'
+    DATA_PATH = 'NABU/data/processed_data/'
   else:
     DATA_PATH = (os.path.normpath(os.path.join(*([CUR_DIR] + [".."] * levels_up)))) + '/data/processed_data/'
 
@@ -226,65 +226,35 @@ def ProcessMultilingualDataset(args, set=None):
          dataset[lang + '_test_node1'],
          dataset[lang + '_test_node2']))
 
-    if args.distillation == 'False':
-      final_dataset = {}
-      for opt in ['train', 'test', 'eval']:
-        final_dataset[opt + '_set'] = \
-          multilingual_dataset['eng_' + opt + '_set'].concatenate(
-            multilingual_dataset['ger_' + opt + '_set'].concatenate(
-              multilingual_dataset['rus_' + opt + '_set']))
+    final_dataset = {}
+    for opt in ['train', 'test', 'eval']:
+      final_dataset[opt + '_set'] = \
+        multilingual_dataset['eng_' + opt + '_set'].concatenate(
+          multilingual_dataset['ger_' + opt + '_set'].concatenate(
+            multilingual_dataset['rus_' + opt + '_set']))
 
-      if args.sentencepiece == 'False':
-        src_vocab_size = len(src_vocab.word_index) + 1
-        tgt_vocab_size = args.vocab_size
-      else:
-        src_vocab_size = len(src_vocab.word_index) + 1
-        tgt_vocab_size = tgt_vocab.get_piece_size()
-
-      final_dataset['train_set'] = final_dataset['train_set'].shuffle(MULTI_BUFFER_SIZE)
-      final_dataset['train_set'] = final_dataset['train_set'].batch(BATCH_SIZE,
-                                                                    drop_remainder=True)
-      # final_dataset['eval_set'] = final_dataset['eval_set'].shuffle(MULTI_BUFFER_SIZE)
-      final_dataset['eval_set'] = final_dataset['eval_set'].batch(BATCH_SIZE,
-                                                                  drop_remainder=True)
-      # final_dataset['test_set'] = final_dataset['train_set'].shuffle(MULTI_BUFFER_SIZE)
-      final_dataset['test_set'] = final_dataset['test_set'].batch(BATCH_SIZE,
-                                                                  drop_remainder=False)
-      steps_per_epoch = int(MULTI_BUFFER_SIZE // BATCH_SIZE)
-
-      print('BUFFER SIZE ' + str(MULTI_BUFFER_SIZE))
-      print("Dataset shapes : ")
-
-      return (final_dataset, src_vocab, src_vocab_size, tgt_vocab,
-              tgt_vocab_size, MULTI_BUFFER_SIZE, steps_per_epoch, MaxSeqSize)
+    if args.sentencepiece == 'False':
+      src_vocab_size = len(src_vocab.word_index) + 1
+      tgt_vocab_size = args.vocab_size
     else:
-      if args.sentencepiece == 'False':
-        src_vocab_size = len(src_vocab.word_index) + 1
-        tgt_vocab_size = len(src_vocab.word_index) + 1
-      else:
-        src_vocab_size = len(src_vocab.word_index) + 1
-        tgt_vocab_size = tgt_vocab.get_piece_size()
+      src_vocab_size = len(src_vocab.word_index) + 1
+      tgt_vocab_size = tgt_vocab.get_piece_size()
 
-      steps_per_epoch = int(MULTI_BUFFER_SIZE // BATCH_SIZE)
+    final_dataset['train_set'] = final_dataset['train_set'].shuffle(MULTI_BUFFER_SIZE)
+    final_dataset['train_set'] = final_dataset['train_set'].batch(BATCH_SIZE,
+                                                                  drop_remainder=True)
+    final_dataset['eval_set'] = final_dataset['eval_set'].batch(BATCH_SIZE,
+                                                                drop_remainder=True)
+    final_dataset['test_set'] = final_dataset['test_set'].batch(BATCH_SIZE,
+                                                                drop_remainder=False)
+    steps_per_epoch = int(MULTI_BUFFER_SIZE // BATCH_SIZE)
 
-      for lang in languages:
-        multilingual_dataset[lang + '_train_set'] = multilingual_dataset[lang + '_train_set'].batch(BATCH_SIZE,
-                                                                                                    drop_remainder=True)
-        multilingual_dataset[lang + '_eval_set'] = multilingual_dataset[lang + '_eval_set'].batch(BATCH_SIZE,
-                                                                                                  drop_remainder=True)
-        multilingual_dataset[lang + '_test_set'] = multilingual_dataset[lang + '_test_set'].batch(BATCH_SIZE,
-                                                                                                  drop_remainder=False)
+    print('BUFFER SIZE ' + str(MULTI_BUFFER_SIZE))
+    print("Dataset shapes : ")
 
-      eval_sets = {}
+    return (final_dataset, src_vocab, src_vocab_size, tgt_vocab,
+            tgt_vocab_size, MULTI_BUFFER_SIZE, steps_per_epoch, MaxSeqSize)
 
-      for opt in ['test', 'eval']:
-        eval_sets[opt + '_set'] = \
-          multilingual_dataset['eng_' + opt + '_set'].concatenate(
-            multilingual_dataset['ger_' + opt + '_set'].concatenate(
-              multilingual_dataset['rus_' + opt + '_set']))
-
-      return (multilingual_dataset, src_vocab, src_vocab_size, tgt_vocab,
-              tgt_vocab_size, MULTI_BUFFER_SIZE, steps_per_epoch, MaxSeqSize)
   else:
     dataset, vocab = LoadMultlingualDataset(args)
     for lang in languages:
@@ -364,58 +334,29 @@ def ProcessMultilingualDataset(args, set=None):
       multilingual_dataset[lang + '_test_set'] = tf.data.Dataset.from_tensor_slices(
         dataset[lang + '_test_src'])
 
-    if args.distillation == 'False':
-      final_dataset = {}
-      for opt in ['train', 'test', 'eval']:
-        final_dataset[opt + '_set'] = \
-          multilingual_dataset['eng_' + opt + '_set'].concatenate(
-            multilingual_dataset['ger_' + opt + '_set'].concatenate(
-              multilingual_dataset['rus_' + opt + '_set']))
+    final_dataset = {}
+    for opt in ['train', 'test', 'eval']:
+      final_dataset[opt + '_set'] = \
+        multilingual_dataset['eng_' + opt + '_set'].concatenate(
+          multilingual_dataset['ger_' + opt + '_set'].concatenate(
+            multilingual_dataset['rus_' + opt + '_set']))
 
-      if args.sentencepiece == 'False':
-        tgt_vocab_size = args.vocab_size
-      else:
-        tgt_vocab_size = vocab.get_piece_size()
-
-      final_dataset['train_set'] = final_dataset['train_set'].shuffle(MULTI_BUFFER_SIZE)
-      final_dataset['train_set'] = final_dataset['train_set'].batch(BATCH_SIZE,
-                                                                    drop_remainder=True)
-      # final_dataset['eval_set'] = final_dataset['eval_set'].shuffle(MULTI_BUFFER_SIZE)
-      final_dataset['eval_set'] = final_dataset['eval_set'].batch(BATCH_SIZE,
-                                                                  drop_remainder=True)
-      # final_dataset['test_set'] = final_dataset['train_set'].shuffle(MULTI_BUFFER_SIZE)
-      final_dataset['test_set'] = final_dataset['test_set'].batch(BATCH_SIZE,
-                                                                  drop_remainder=False)
-      steps_per_epoch = int(MULTI_BUFFER_SIZE // BATCH_SIZE)
-
-      print('BUFFER SIZE ' + str(MULTI_BUFFER_SIZE))
-      print("Dataset shapes : ")
-
-      return (final_dataset, vocab, tgt_vocab_size,
-              MULTI_BUFFER_SIZE, steps_per_epoch, MaxSeqSize)
+    if args.sentencepiece == 'False':
+      tgt_vocab_size = args.vocab_size
     else:
-      if args.sentencepiece == 'False':
-        vocab_size = len(vocab.word_index) + 1
-      else:
-        vocab_size = vocab.get_piece_size()
+      tgt_vocab_size = vocab.get_piece_size()
 
-      steps_per_epoch = int(MULTI_BUFFER_SIZE // BATCH_SIZE)
+    final_dataset['train_set'] = final_dataset['train_set'].shuffle(MULTI_BUFFER_SIZE)
+    final_dataset['train_set'] = final_dataset['train_set'].batch(BATCH_SIZE,
+                                                                  drop_remainder=True)
+    final_dataset['eval_set'] = final_dataset['eval_set'].batch(BATCH_SIZE,
+                                                                drop_remainder=True)
+    final_dataset['test_set'] = final_dataset['test_set'].batch(BATCH_SIZE,
+                                                                drop_remainder=False)
+    steps_per_epoch = int(MULTI_BUFFER_SIZE // BATCH_SIZE)
 
-      for lang in languages:
-        multilingual_dataset[lang + '_train_set'] = multilingual_dataset[lang + '_train_set'].batch(BATCH_SIZE,
-                                                                                                    drop_remainder=True)
-        multilingual_dataset[lang + '_eval_set'] = multilingual_dataset[lang + '_eval_set'].batch(BATCH_SIZE,
-                                                                                                  drop_remainder=True)
-        multilingual_dataset[lang + '_test_set'] = multilingual_dataset[lang + '_test_set'].batch(BATCH_SIZE,
-                                                                                                  drop_remainder=False)
+    print('BUFFER SIZE ' + str(MULTI_BUFFER_SIZE))
+    print("Dataset shapes : ")
 
-      eval_sets = {}
-
-      for opt in ['test', 'eval']:
-        eval_sets[opt + '_set'] = \
-          multilingual_dataset['eng_' + opt + '_set'].concatenate(
-            multilingual_dataset['ger_' + opt + '_set'].concatenate(
-              multilingual_dataset['rus_' + opt + '_set']))
-
-      return (multilingual_dataset, vocab, vocab_size,
-              MULTI_BUFFER_SIZE, steps_per_epoch, MaxSeqSize)
+    return (final_dataset, vocab, tgt_vocab_size,
+            MULTI_BUFFER_SIZE, steps_per_epoch, MaxSeqSize)

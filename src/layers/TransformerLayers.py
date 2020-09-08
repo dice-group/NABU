@@ -4,7 +4,6 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from src.arguments import get_args
 from src.layers import AttentionLayer
 from src.layers import EmbeddingLayer
 from src.layers import ffn_layer
