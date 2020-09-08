@@ -72,7 +72,7 @@ class EncoderStack(tf.keras.layers.Layer):
 
 class TransGAT(tf.keras.Model):
   """
-  Model that uses Graph Attention encoder and Transformer decoder
+  Model that uses Graph Attention encoder and RNN decoder (for now)
   """
 
   def __init__(self, args, src_vocab_size, src_lang,
@@ -86,6 +86,9 @@ class TransGAT(tf.keras.Model):
       tgt_vocab_size, args.emb_dim)
 
     self.metric_layer = MetricLayer(tgt_vocab_size)
+
+    # self.encoder = GraphEncoder(args.enc_layers, args.emb_dim, args.num_heads, args.hidden_size,
+    #                            args.filter_size, reg_scale=args.reg_scale, rate=args.dropout)
     self.encoder = EncoderStack(args)
     self.decoder_stack = DecoderStack(args)
     self.vocab_tgt_size = tgt_vocab_size
@@ -93,11 +96,6 @@ class TransGAT(tf.keras.Model):
     self.args = args
     self.num_heads = args.num_heads
     self.max_len = max_seq_len
-    if self.args.distillation == 'True':
-      self.temp = tf.constant(self.args.temp
-                              , dtype=tf.float32)
-    else:
-      self.temp = tf.constant(1, dtype=tf.float32)
 
   def _get_symbols_to_logits_fn(self, max_decode_length, training):
     """Returns a decoding function that calculates logits of the next tokens."""
@@ -179,14 +177,10 @@ class TransGAT(tf.keras.Model):
   def __call__(self, nodes, labels, node1, node2, targ, mask):
     """
     Puts the tensors through encoders and decoders
+    :param adj: Adjacency matrices of input example
+    :type adj: tf.tensor
     :param nodes: node features
     :type nodes: tf.tensor
-    :param labels: node features
-    :type labels: tf.tensor
-    :param node1: node features
-    :type node1: tf.tensor
-    :param node2: node features
-    :type node2: tf.tensor
     :param targ: target sequences
     :type targ: tf.tensor
     :return: output probability distribution
@@ -236,9 +230,5 @@ class TransGAT(tf.keras.Model):
 
     logits = self.tgt_emb_layer(outputs, mode="linear")
     logits = tf.cast(logits, tf.float32)
-    # increase the temperature of the logits before
-    # turning them into probability distribution
-    if self.args.distillation == 'True':
-      logits = tf.math.divide(logits, self.temp)
 
     return logits

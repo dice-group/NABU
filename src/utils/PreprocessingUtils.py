@@ -15,11 +15,11 @@ def PreProcessRolesModel(path):
   of RDF triples
 
   ex - Let the triple set be
-  " AAAA | Loves | Physics <TSP> AAAA | lives_in | AAAAAA "
+  " Dwarak | Loves | Physics <TSP> Dwarak | lives_in | India "
   There could be sets from one to seven triples.
   We intially extract each triple and create a triple list.
-  triple 1 = AAAA | loves | physics
-  triple 2 = AAAA | lives_in | AAAAAA
+  triple 1 = Dwarak | loves | physics
+  triple 2 = Dwaral | lives_in | India
 
   We create a Networkx Multi-Di graph objet with the subject
   and predicate of the triple as nodes and the predicate as
@@ -110,16 +110,16 @@ def PreProcess(path, lang):
   of RDF triples
 
   ex - Let the triple set be
-  " AAAAk | Loves | Physics <TSP> AAAAk | lives_in | India "
+  " Dwarak | Loves | Physics <TSP> Dwarak | lives_in | India "
   There could be sets from one to seven triples.
   We intially extract each triple and create a triple list.
-  triple 1 = AAAAk | loves | physics
-  triple 2 = AAAAl | lives_in | India
+  triple 1 = Dwarak | loves | physics
+  triple 2 = Dwaral | lives_in | India
 
   Then we create a Networkx Mutli-Di Graph object that creates
   a graph with all entities in the triples as nodes and describes the
   edge between them as connection of nodes.
-  node 1 - AAAAk, node2 - loves, node3 - Physics
+  node 1 - Dwarak, node2 - loves, node3 - Physics
   Label of edge between node1 - node2 - A_ZERO
   Label of edge between node3 - node3 - A_ONE
 

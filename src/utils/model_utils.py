@@ -40,6 +40,26 @@ def _set_up_dirs(args):
   return OUTPUT_DIR, EvalResultsFile, TestResults, log_file, log_dir
 
 
+def process_results(results_file):
+  def unicode_to_ascii(s):
+    return ''.join(c for c in unicodedata.normalize('NFD', s)
+                   if unicodedata.category(c) != 'Mn')
+
+  def PreProcessSentence(w):
+    regex = re.compile('[%s]' % re.escape(string.punctuation))
+    w = regex.sub('', w)
+    w = unicode_to_ascii(w.lower().strip())
+    w = w.rstrip().strip()
+
+    return w
+
+  with open(results_file) as f:
+    content = f.readlines()
+  content = [PreProcessSentence(x) for x in content]
+  with open(results_file, 'w+') as f:
+    f.write('\n'.join(content))
+
+
 def _tensorize(vocab, text):
   """
   Function to convert texts into number sequences first, and then
@@ -127,6 +147,7 @@ def PreProcessSentence(w, sentencepiece, lang):
   w = '<start> ' + w + ' <end>'
   return w
 
+
 def PreprocessSeqSource(w, sentencepiece, lang):
   """
   Preprocess a sentence by cleaning it, making everything
@@ -164,6 +185,7 @@ def PreprocessSeqSource(w, sentencepiece, lang):
   w = '<start> <{}> {} <end>'.format(lang, w)
   return w
 
+
 def model_summary(model):
   """
   Gives summary of model and its params
@@ -196,8 +218,8 @@ def get_position_encoding(length, hidden_size, min_timescale=1.0,
   position = tf.cast(tf.range(length), tf.float32)
   num_timescales = hidden_size // 2
   log_timescale_increment = (
-          math.log(float(max_timescale) / float(min_timescale)) /
-          (tf.cast(num_timescales, tf.float32) - 1))
+      math.log(float(max_timescale) / float(min_timescale)) /
+      (tf.cast(num_timescales, tf.float32) - 1))
   inv_timescales = min_timescale * tf.exp(
     tf.cast(tf.range(num_timescales), tf.float32) * -log_timescale_increment)
   scaled_time = tf.expand_dims(position, 1) * tf.expand_dims(inv_timescales, 0)
